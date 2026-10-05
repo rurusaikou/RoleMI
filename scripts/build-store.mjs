@@ -1,0 +1,24 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const backend = process.env.ROLEMI_BACKEND_URL;
+if (!backend) throw new Error("ROLEMI_BACKEND_URL is required for a store build.");
+const url = new URL(backend);
+if (url.protocol !== "https:") throw new Error("Store backend must use HTTPS.");
+const dist = path.join(root, "dist", "store");
+fs.rmSync(dist, { recursive: true, force: true });
+fs.mkdirSync(dist, { recursive: true });
+for (const name of ["src", "assets", "manifest.json"]) fs.cpSync(path.join(root, name), path.join(dist, name), { recursive: true });
+const configPath = path.join(dist, "src/shared/backend/config.js");
+const config = fs.readFileSync(configPath, "utf8").replace('export const BACKEND_URL = "http://localhost:8787";', `export const BACKEND_URL = ${JSON.stringify(url.href.replace(/\/$/, ""))};`);
+fs.writeFileSync(configPath, config);
+const manifestPath = path.join(dist, "manifest.json");
+const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+const extractionHosts = manifest.host_permissions.filter((permission) => /\.(?:zhipin|zhaopin|liepin)\.com\/\*$/.test(permission));
+manifest.host_permissions = [`${url.origin}/*`, ...extractionHosts];
+delete manifest.content_scripts;
+fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+console.log(`Store build created: ${dist}`);
+console.log(`Backend: ${url.origin}`);

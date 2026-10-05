@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "RoleMI",
+  "description": "Capture job descriptions, analyze fit with your resume, and generate actionable application guidance.",
+  "version": "3.0.0",
+  "minimum_chrome_version": "114",
+  "action": {
+    "default_title": "RoleMI",
+    "default_icon": {
+      "16": "assets/icons/logo-transparent-16.png",
+      "32": "assets/icons/logo-transparent-32.png",
+      "48": "assets/icons/logo-transparent-48.png",
+      "128": "assets/icons/logo-transparent-128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "src/popup.html"
+  },
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "sidePanel",
+    "scripting",
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "http://localhost:8787/*",
+    "*://*.zhipin.com/*",
+    "*://*.zhaopin.com/*",
+    "*://*.liepin.com/*"
+  ],
+  "icons": {
+    "16": "assets/icons/logo-transparent-16.png",
+    "32": "assets/icons/logo-transparent-32.png",
+    "48": "assets/icons/logo-transparent-48.png",
+    "128": "assets/icons/logo-transparent-128.png"
+  }
+}

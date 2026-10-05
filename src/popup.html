@@ -1,0 +1,422 @@
+<!doctype html>
+<!-- 侧栏页面骨架：声明各视图、表单及交互挂载点，由 popup.js 初始化控制器。 -->
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RoleMI</title>
+    <link rel="stylesheet" href="./popup.css">
+  </head>
+  <body>
+    <aside id="plugin" class="plugin">
+      <header class="plugin-header">
+        <button id="homeBtn" class="brand-home" type="button" aria-label="返回 RoleMI 首页"><img class="logo" src="../assets/icons/logo-transparent-128.png" width="26" height="26" alt=""><span>RoleMI</span></button>
+        <div class="header-menu-wrap">
+          <button id="moreMenuBtn" class="icon-btn" type="button" title="更多" aria-label="打开更多菜单" aria-haspopup="menu" aria-expanded="false">⋮</button>
+          <div id="headerMenu" class="header-menu is-hidden" role="menu">
+            <button id="settingsBtn" class="header-menu-item is-hidden" type="button" role="menuitem"><span aria-hidden="true">⚙</span>服务设置</button>
+            <button id="helpBtn" class="header-menu-item" type="button" role="menuitem"><svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"></path><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z"></path></svg>使用帮助</button>
+            <button id="feedbackBtn" class="header-menu-item" type="button" role="menuitem"><span aria-hidden="true">☵</span>反馈建议</button>
+          </div>
+        </div>
+      </header>
+
+      <nav class="top-tabs" aria-label="插件模块">
+        <button data-tab="jobs" type="button">岗位池</button>
+        <button data-tab="favorites" type="button">收藏</button>
+      </nav>
+
+      <section id="jobsView" class="view active">
+        <div class="jobs-sticky-tools">
+          <div class="view-title populated-home">
+            <div>
+              <h1>岗位获取</h1>
+              <p id="status">今天在看什么机会？ 👋</p>
+            </div>
+            <div class="title-actions">
+              <button id="extractBtn" class="primary" type="button"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7"></path><path d="M14 11a5 5 0 0 0-7.1 0l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"></path></svg><span>提取当前岗位</span></button>
+              <button id="manualAddBtn" class="soft-btn" type="button"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg><span>手动添加岗位</span></button>
+            </div>
+          </div>
+
+          <div id="searchRow" class="search-row is-hidden">
+            <input id="jobSearch" type="search" placeholder="搜索职位 / 公司 / 关键词">
+            <span id="count" class="count" aria-label="岗位数量">0</span>
+          </div>
+        </div>
+
+        <article id="emptyPanel" class="empty-panel">
+          <div class="empty-hero">
+            <div class="empty-brand-mark" aria-hidden="true">
+              <img src="../assets/icons/logo-transparent-512.png" alt="">
+              <span class="brand-node brand-node-blue"></span>
+              <span class="brand-node brand-node-cyan"></span>
+              <span class="brand-node brand-node-purple"></span>
+            </div>
+            <p class="empty-greeting">Hi 👋</p>
+            <h1>今天在看<br>什么机会？</h1>
+            <p>先看懂岗位，再决定怎么投。</p>
+          </div>
+          <div class="empty-actions">
+            <button id="emptyExtractBtn" class="primary" type="button">提取当前岗位 <span aria-hidden="true">→</span></button>
+            <button id="emptyManualAddBtn" class="empty-manual-btn" type="button"><span aria-hidden="true">＋</span> 手动添加岗位</button>
+          </div>
+          <p id="emptyActionStatus" class="empty-support" aria-live="polite">支持 BOSS 直聘、智联招聘和猎聘</p>
+          <div class="empty-value-list" aria-label="RoleMI 可以帮助你">
+            <span>看懂岗位</span>
+            <span>看清差距</span>
+            <span>知道怎么投</span>
+          </div>
+        </article>
+
+        <div id="jobList" class="job-list"></div>
+        <div id="bottomActions" class="bottom-actions is-hidden">
+          <button id="exportAllBtn" class="soft-btn" type="button">导出全部岗位</button>
+          <button id="clearBtn" class="danger-btn" type="button">清空岗位池</button>
+        </div>
+      </section>
+
+      <section id="manualView" class="view">
+        <div class="sub-header"><button id="manualBackBtn" class="back-inline" type="button">‹ 返回</button></div>
+        <div class="view-title manual-title"><div><h1>手动添加岗位</h1><p>粘贴岗位描述，其他信息可以稍后补充。</p></div></div>
+        <form id="manualJobForm" class="manual-form">
+          <label class="manual-description-label" for="manualDescription">岗位描述 <span>必填 · 最多 2000 字</span></label>
+          <textarea id="manualDescription" name="description" required maxlength="2000" aria-describedby="manualError" placeholder="粘贴岗位职责和任职要求……"></textarea>
+          <p id="manualError" class="manual-error" role="alert"></p>
+          <details id="manualOptionalDetails" class="manual-optional">
+            <summary>补充信息 · 选填</summary>
+            <div class="manual-optional-fields">
+              <label class="manual-field" for="manualTitle"><span>职位名称</span><input id="manualTitle" name="title" placeholder="例如：AI 产品经理"></label>
+              <label class="manual-field" for="manualCompany"><span>公司 / 地点</span><input id="manualCompany" name="company" placeholder="例如：示例科技 · 上海"></label>
+              <label class="manual-field" for="manualExperience"><span>经验 / 学历</span><input id="manualExperience" name="experience" placeholder="例如：3–5 年 · 本科"></label>
+              <label class="manual-field" for="manualSalary"><span>薪资</span><input id="manualSalary" name="salary" placeholder="例如：25–35K"></label>
+            </div>
+          </details>
+          <div class="manual-actions"><button id="manualCancelBtn" class="soft-btn" type="button">取消</button><button id="manualSubmitBtn" class="primary" type="submit" disabled>添加岗位</button></div>
+        </form>
+      </section>
+
+      <section id="favoritesView" class="view">
+        <div class="view-title">
+          <div>
+            <h1>收藏</h1>
+            <p>快速回到重点岗位</p>
+          </div>
+          <button id="exportFavoritesBtn" class="soft-btn" type="button">导出收藏</button>
+        </div>
+        <div id="favoriteList" class="job-list"></div>
+      </section>
+
+      <section id="detailView" class="view">
+        <div class="sub-header">
+          <button id="backBtn" class="back-inline" type="button">‹ 返回</button>
+          <button id="detailStar" class="star-btn" type="button" title="收藏" aria-label="收藏">★</button>
+        </div>
+        <div class="job-heading">
+          <h1 id="detailTitle">-</h1>
+          <p id="detailMeta">-</p>
+        </div>
+        <nav id="flowTabs" class="flow-tabs" aria-label="岗位流程">
+          <button data-step="analysis" class="active" type="button">深度分析</button>
+          <button data-step="match" type="button">匹配</button>
+          <button data-step="revision" type="button">修改建议</button>
+          <button data-step="greeting" type="button">沟通</button>
+        </nav>
+
+        <div id="jdStep" class="step-view active">
+          <div class="action-row">
+            <button id="detailAnalyzeBtn" class="primary" type="button">深度分析</button>
+            <button id="copyJdBtn" class="soft-btn" type="button">复制岗位描述</button>
+          </div>
+          <article class="card jd-detail-card">
+            <h2>岗位详情</h2>
+            <dl>
+              <div>
+                <dt>职位名称</dt>
+                <dd id="jdFullTitle">-</dd>
+              </div>
+              <div>
+                <dt>公司地点</dt>
+                <dd id="jdFullCompany">-</dd>
+              </div>
+              <div>
+                <dt>岗位信息</dt>
+                <dd id="jdFullMeta">-</dd>
+              </div>
+              <div>
+                <dt>薪资</dt>
+                <dd id="jdFullSalary">-</dd>
+              </div>
+            </dl>
+            <div id="jdDetailText" class="jd-copy"></div>
+          </article>
+        </div>
+
+        <div id="analysisStep" class="step-view">
+          <article id="analysisStatusCard" class="analysis-state card">
+            <div>
+              <h2 id="analysisStatusTitle">深度分析</h2>
+              <p id="analysisStatusText" aria-live="polite">点击岗位池中的“深度分析”后，将基于当前岗位描述生成结构化分析。</p>
+            </div>
+            <button id="retryAnalysisBtn" class="soft-btn is-hidden" type="button">重新分析</button>
+          </article>
+          <article class="card jd-analysis-card analysis-essence-card analysis-result-card">
+            <div class="analysis-section-title">
+              <span class="analysis-title-icon target">◎</span>
+              <h2>岗位本质</h2>
+            </div>
+            <div class="analysis-essence-body">
+              <ul id="analysisEssence"></ul>
+            </div>
+          </article>
+          <article class="card jd-analysis-card analysis-result-card">
+            <div class="analysis-section-title">
+              <span class="analysis-title-icon diamond">◇</span>
+              <h2>核心要求</h2>
+            </div>
+            <ul id="analysisAudience"></ul>
+          </article>
+          <article class="card jd-analysis-card analysis-result-card">
+            <div class="analysis-section-title">
+              <span class="analysis-title-icon eye">●</span>
+              <h2>隐形要求</h2>
+            </div>
+            <ul id="analysisHidden"></ul>
+          </article>
+          <article class="card jd-analysis-card analysis-result-card">
+            <div class="analysis-section-title">
+              <span class="analysis-title-icon person">♙</span>
+              <h2>理想候选人画像</h2>
+            </div>
+            <ul id="analysisIdeal"></ul>
+          </article>
+          <p class="analysis-note analysis-result-card">小贴士：以上信息基于岗位描述分析得出，建议结合面试进一步验证与补充。</p>
+        </div>
+
+        <div id="matchStep" class="step-view">
+          <article id="matchUploadPrompt" class="upload-card">
+            <div class="resume-file-head">
+              <div class="resume-file-copy">
+                <strong id="resumeFileName" class="resume-file-name">尚未选择文件</strong>
+                <p id="resumeStatus" role="status" aria-live="polite">当前还没有简历。支持 PDF / DOCX，提取文本不超过 4000 字；超限不进入分析。</p>
+              </div>
+              <label id="resumeUploadControl" class="upload-btn soft-btn compact-secondary" aria-disabled="false">
+                <span id="resumeUploadLabel">上传简历</span>
+                <input id="resumeFile" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+              </label>
+            </div>
+          </article>
+          <div id="matchResults" class="match-results is-hidden">
+            <article class="score-card">
+              <div class="score-card-head">
+                <span>匹配结论</span>
+                <button id="analyzeResumeMatchBtn" class="soft-btn compact-secondary" type="button">重新分析</button>
+              </div>
+              <div class="score-card-body">
+                <div class="score-conclusion">
+                  <div>
+                    <strong id="matchScore">等待分析</strong>
+                  </div>
+                  <em id="matchVerdict">等待分析</em>
+                </div>
+                <div id="matchMetricGrid" class="match-overview">
+                  <div class="match-overview-head">
+                    <strong>匹配概览</strong>
+                  </div>
+                  <div class="match-overview-stats">
+                    <div class="matched"><strong id="matchMatchedCount">0</strong><span>已匹配</span></div>
+                    <div class="partial"><strong id="matchPartialCount">0</strong><span>可迁移</span></div>
+                    <div class="missing"><strong id="matchMissingCount">0</strong><span>关键缺口</span></div>
+                  </div>
+                </div>
+              </div>
+              <div id="matchLoadingProgress" class="match-loading-progress is-hidden" role="progressbar" aria-label="正在准备或分析匹配"><span></span></div>
+            </article>
+            <div id="matchList" class="match-list"></div>
+            <div class="match-actions">
+              <button id="clearResumeBtn" class="danger-btn" type="button">清除简历</button>
+              <button id="toGreetingBtn" class="soft-btn" type="button">生成求职开场白</button>
+              <button id="toRevisionBtn" class="primary" type="button">查看修改建议</button>
+            </div>
+            <p class="note">从岗位要求出发，识别你的匹配优势、可迁移能力与关键缺口。</p>
+          </div>
+        </div>
+
+        <div id="greetingStep" class="step-view">
+          <article id="greetingPrompt" class="upload-card">
+            <h2>先完成简历匹配</h2>
+            <p>求职开场白会基于当前岗位的匹配亮点生成。请先在“匹配”中上传简历并完成分析。</p>
+            <button id="goMatchUploadBtn" class="primary" type="button">去上传简历</button>
+          </article>
+          <article id="greetingResult" class="card greeting-card is-hidden">
+            <div class="greeting-card-head">
+              <div>
+                <h2>求职开场白</h2>
+                <p class="greeting-tip">结合岗位重点与个人优势，生成更有针对性的求职开场白。</p>
+              </div>
+            </div>
+            <div class="greeting-controls">
+              <label>
+                <span>沟通风格</span>
+                <select id="greetingTone">
+                  <option value="natural">自然</option>
+                  <option value="concise_direct">简洁直接</option>
+                  <option value="proactive">积极主动</option>
+                  <option value="professional_formal">专业正式</option>
+                </select>
+              </label>
+              <label>
+                <span>内容长度</span>
+                <select id="greetingLength">
+                  <option value="100">精简</option>
+                  <option value="180" selected>标准</option>
+                  <option value="260">详细</option>
+                </select>
+              </label>
+            </div>
+            <div class="greeting-result-head">
+              <strong>生成结果</strong>
+            </div>
+            <div id="greetingLoading" class="greeting-loading is-hidden" role="status" aria-label="正在生成求职开场白，完成后自动显示。">
+              <div class="greeting-loading-title"><span class="greeting-spinner" aria-hidden="true"></span><strong>正在生成求职开场白</strong></div>
+              <div class="greeting-topics" aria-hidden="true"><span>正在整理</span><div class="greeting-topic-carousel">
+                <span style="--topic-index:0">岗位最关注的能力</span>
+                <span style="--topic-index:1">最有说服力的经历</span>
+                <span style="--topic-index:2">表达与事实边界</span>
+                <span style="--topic-index:3">自然的沟通开场</span>
+              </div></div>
+              <p>生成完成后会自动显示，你也可以继续修改文案。</p>
+            </div>
+            <textarea id="greetingText" class="greeting-text" aria-label="求职开场白生成结果"></textarea>
+            <div class="greeting-actions">
+              <button id="generateGreetingBtn" class="soft-btn" type="button">↻ 重新生成</button>
+              <button id="copyGreetingBtn" class="primary" type="button">▣ 复制</button>
+            </div>
+            <p id="copyStatus" class="greeting-note" role="status"></p>
+          </article>
+        </div>
+
+        <div id="revisionStep" class="step-view">
+          <article id="revisionPrompt" class="upload-card">
+            <h2>简历修改建议</h2>
+            <p id="revisionPromptText">上传简历并完成匹配分析后，这里会展示针对当前岗位的简历修改建议。</p>
+            <button id="goRevisionMatchBtn" class="primary" type="button">去匹配分析</button>
+          </article>
+          <article id="resumeSuggestionsCard" class="card resume-suggestions is-hidden">
+            <div class="revision-card-head">
+              <span class="revision-head-icon">≡</span>
+              <div>
+                <h2>简历修改建议</h2>
+                <p>基于当前岗位分析，建议从以下方向优化，提升与岗位的匹配度。</p>
+              </div>
+            </div>
+            <div id="revisionPriority" class="revision-priority is-hidden">
+              <span>☼</span>
+              <strong id="revisionPriorityText"></strong>
+            </div>
+            <div id="suggestList" class="resume-revision-list"></div>
+            <p class="revision-tip">基于已有真实经历优化表达，提升简历与目标岗位的相关性。</p>
+          </article>
+        </div>
+      </section>
+
+      <dialog id="clearConfirmDialog" class="confirm-dialog" aria-labelledby="clearConfirmTitle" aria-describedby="clearConfirmText">
+        <h2 id="clearConfirmTitle">清空全部岗位？</h2>
+        <p id="clearConfirmText">岗位池、收藏及关联分析结果将被删除，简历保留。</p>
+        <p id="clearConfirmError" class="confirm-error" role="alert"></p>
+        <div class="confirm-actions">
+          <button id="cancelClearBtn" class="soft-btn" type="button">取消</button>
+          <button id="confirmClearBtn" class="danger-primary" type="button">清空岗位</button>
+        </div>
+      </dialog>
+
+      <section id="settingsView" class="view">
+        <div class="sub-header">
+          <button id="settingsBackBtn" class="back-inline" type="button">‹ 返回</button>
+        </div>
+        <div class="view-title">
+          <div>
+            <h1>服务设置</h1>
+            <p>需要使用自己的模型服务时，再填写下面的配置。</p>
+          </div>
+        </div>
+        <form id="apiForm" class="settings-form">
+          <p id="currentServiceStatus" class="service-status">当前使用默认服务</p>
+          <label>
+            <span>API 地址</span>
+            <input id="baseUrl" type="url" placeholder="https://api.example.com/v1">
+          </label>
+          <label>
+            <span>模型名称</span>
+            <input id="modelName" type="text" placeholder="模型名称">
+          </label>
+          <label>
+            <span>API Key</span>
+            <input id="apiKey" type="password" placeholder="sk-...">
+            <small>仅保存在当前浏览器会话，关闭浏览器后需要重新输入。</small>
+          </label>
+          <div class="form-row">
+            <button id="testApiBtn" type="button" class="soft-btn">测试连接</button>
+            <button id="saveSettingsBtn" type="submit" class="primary">保存设置</button>
+          </div>
+          <button id="restoreDefaultServiceBtn" class="text-btn settings-reset" type="button">恢复默认服务</button>
+          <p id="apiStatus" class="api-status" role="status" aria-live="polite"></p>
+          <p class="settings-note">自定义服务目前需兼容 Responses API。清空配置并保存后，将恢复使用 RoleMI 默认服务。</p>
+        </form>
+      </section>
+
+      <section id="helpView" class="view utility-view">
+        <div class="sub-header"><button id="helpBackBtn" class="back-inline" type="button">‹ 返回</button></div>
+        <div class="view-title utility-title">
+          <div><h1>使用帮助</h1><p>快速了解各功能的使用方法。</p></div>
+        </div>
+        <div class="help-groups">
+          <section class="help-group"><h2>开始使用</h2>
+            <details class="help-item"><summary><span><strong>提取当前岗位</strong><small>从招聘网站读取并保存当前岗位。</small></span></summary><div><p>自动读取当前职位详情页中的岗位信息，并加入本地岗位池。</p><ol><li>打开支持的招聘网站职位详情页。</li><li>打开 RoleMI，点击“提取当前岗位”。</li><li>确认岗位已加入岗位池。</li></ol></div></details>
+            <details class="help-item"><summary><span><strong>手动添加岗位</strong><small>粘贴其他渠道的岗位描述并保存。</small></span></summary><div><p>适合网页无法自动提取或来自其他渠道的岗位。</p><ol><li>点击“手动添加岗位”。</li><li>粘贴岗位描述，按需补充其他信息。</li><li>保存后从岗位池打开。</li></ol></div></details>
+          </section>
+          <section class="help-group"><h2>分析岗位</h2>
+            <details class="help-item"><summary><span><strong>岗位分析</strong><small>理解岗位本质、要求和理想候选人。</small></span></summary><div><p>基于岗位描述整理岗位本质、核心要求、隐含要求和理想候选人。</p><ol><li>打开目标岗位。</li><li>进入“深度分析”并开始分析。</li><li>查看岗位结论。</li></ol></div></details>
+            <details class="help-item"><summary><span><strong>简历匹配</strong><small>判断直接匹配、可迁移能力和关键缺口。</small></span></summary><div><p>结合岗位分析与简历，识别匹配证据和关键差距。</p><ol><li>进入“匹配”并上传简历。</li><li>点击开始分析。</li><li>查看匹配结论。</li></ol></div></details>
+          </section>
+          <section class="help-group"><h2>准备投递</h2>
+            <details class="help-item"><summary><span><strong>修改建议</strong><small>围绕目标岗位优化真实经历的表达。</small></span></summary><div><p>在不虚构经历的前提下，给出针对当前岗位的简历表达建议。</p><ol><li>先完成简历匹配。</li><li>进入“修改建议”。</li><li>逐条核对并采用真实内容。</li></ol></div></details>
+            <details class="help-item"><summary><span><strong>沟通草稿</strong><small>生成可继续编辑的首次沟通内容。</small></span></summary><div><p>结合岗位重点和个人匹配证据生成首次沟通草稿。</p><ol><li>完成岗位分析和简历匹配。</li><li>进入“沟通”并选择内容密度。</li><li>生成后编辑、核对并复制。</li></ol></div></details>
+          </section>
+          <section class="help-group"><h2>管理岗位</h2>
+            <details class="help-item"><summary><span><strong>收藏</strong><small>标记重点岗位，方便集中查看。</small></span></summary><div><p>为重点岗位添加收藏标记，并在收藏页统一查看。</p><ol><li>点击岗位卡片或详情页星标。</li><li>切换到“收藏”查看。</li><li>再次点击可取消收藏。</li></ol></div></details>
+            <details class="help-item"><summary><span><strong>导出收藏</strong><small>导出收藏岗位，便于整理和备份。</small></span></summary><div><p>把收藏岗位及已有分析结果整理成 Excel 文件。</p><ol><li>进入“收藏”。</li><li>点击“导出收藏”。</li><li>在下载目录中打开文件。</li></ol></div></details>
+          </section>
+        </div>
+      </section>
+
+      <section id="feedbackView" class="view utility-view">
+        <div class="sub-header"><button id="feedbackBackBtn" class="back-inline" type="button">‹ 返回</button></div>
+        <div class="view-title utility-title">
+          <div><h1>反馈建议</h1><p>遇到问题或有建议？欢迎告诉我们，帮助我们做得更好。</p></div>
+        </div>
+        <form id="feedbackForm" class="feedback-form">
+          <fieldset>
+            <legend>问题类型</legend>
+            <div class="feedback-types">
+              <label><input type="radio" name="type" value="function_error" checked><span>功能异常</span></label>
+              <label><input type="radio" name="type" value="analysis_inaccurate"><span>分析不准</span></label>
+              <label><input type="radio" name="type" value="suggestion"><span>使用建议</span></label>
+              <label><input type="radio" name="type" value="other"><span>其他</span></label>
+            </div>
+          </fieldset>
+          <label class="feedback-job" for="feedbackJob"><strong>相关岗位（可选）</strong><small class="feedback-job-hint">提交反馈会发送你的反馈内容。若选择相关岗位，还会发送该岗位描述及已生成的 AI 分析结果，用于问题定位和改进。不会发送简历原文或附件。</small><select id="feedbackJob" name="jobId"><option value="">不关联岗位</option></select></label>
+          <label class="feedback-content" for="feedbackContent"><strong>反馈内容</strong><textarea id="feedbackContent" name="content" required maxlength="500" placeholder="请描述你遇到的问题或建议…"></textarea></label>
+          <p id="feedbackCount" class="feedback-count">0 / 500</p>
+          <p id="feedbackStatus" class="feedback-status" role="status" aria-live="polite"></p>
+          <button id="feedbackSubmitBtn" class="primary feedback-submit" type="submit" disabled>提交反馈</button>
+        </form>
+      </section>
+    </aside>
+
+    <script src="./xlsx.js"></script>
+    <script src="./vendor/pdf.min.js"></script>
+    <script src="./vendor/mammoth.browser.min.js"></script>
+    <script type="module" src="./popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "rolemi",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "build:store": "node scripts/build-store.mjs",
+    "verify:release": "node scripts/verify-release.mjs"
+  }
+}
