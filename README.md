@@ -65,6 +65,6 @@ RoleMI 是一个独立开发的个人项目。
 如果你认可它的价值，也愿意支持它继续迭代，可以请我喝杯咖啡 ☕
 
 <p align="center">
-  <img src="./assets/icons/coffee.png" width="400" alt="请我喝杯咖啡">
+  <img src="./assets/icons/coffee.png" width="300" alt="请我喝杯咖啡">
 </p>
 
