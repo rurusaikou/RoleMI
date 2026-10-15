@@ -52,11 +52,28 @@ RoleMI 暂不提供自动投递或招聘账号自动操作。最终是否投递�
 
 只有在你主动使用 AI 功能时，完成对应任务所需的内容才会发送到当前选择的模型服务。匿名使用统计不保存岗位描述、简历正文或完整 AI 请求与响应。
 
+### AI 使用额度
+
+RoleMI 目前为个人维护项目，为控制 AI 服务成本并保证服务稳定性，项目提供的 AI 服务设置了以下使用限制：
+
+* 单个安装实例每天最多 20 次 AI 请求
+* 单个安装实例 60 秒内最多 6 次 AI 请求
+* RoleMI 全体用户每天共享最多 200 次 AI 请求
+
+每日额度按 UTC 时间重置。
+
+岗位分析、简历匹配、修改建议、沟通开场白等 AI 功能均会计入 AI 请求次数。达到个人或全局额度后，需要等待对应额度恢复后才能继续使用 AI 功能。
+
+这些限制主要用于项目早期上线阶段的成本控制和服务保护，后续会根据实际使用情况进行调整。
+
 ## 项目状态
 
 当前版本：**v3.0.0**
+* Microsoft Edge Add-ons：已上线 🎉
+    [⁠在 Microsoft Edge 上安装 RoleMI](https://microsoftedge.microsoft.com/addons/detail/rolemi/nlgnbeobcfgmhlaocpmmlmdaenldpkbe)
+* Chrome Web Store：准备中
 
-Chrome Web Store / Microsoft Edge Add-ons 上线准备中。
+> RoleMI 刚刚上线 Microsoft Edge Add-ons，目前商店搜索索引可能尚未完成。如果暂时无法通过搜索找到 RoleMI，请通过上方官方商店链接安装。
 
 ## 支持 RoleMI
 
