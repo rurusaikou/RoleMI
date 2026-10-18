@@ -206,6 +206,23 @@ test("岗位卡片星标固定在右上角并与标题行对齐", async () => {
   assert.match(css, /\.job-top \.star-btn\s*\{[\s\S]*?width: 32px;[\s\S]*?height: 32px;[\s\S]*?margin-top: -6px;/);
 });
 
+test("岗位卡片更多菜单支持按来源编辑和单独删除", async () => {
+  const [html, view, controller, css] = await Promise.all([
+    readFile(new URL("src/popup.html", root), "utf8"),
+    readFile(new URL("src/features/jobs/view.js", root), "utf8"),
+    readFile(new URL("src/app/controllers/jobs-controller.js", root), "utf8"),
+    readFile(new URL("src/popup.css", root), "utf8")
+  ]);
+  assert.match(view, /data-action="more"[\s\S]*?isManualJob\(job\)[\s\S]*?data-action="edit"[\s\S]*?data-action="delete"/);
+  assert.match(view, /岗位信息已更新 · 建议重新分析[\s\S]*?重新分析/);
+  assert.match(html, /id="deleteJobConfirmDialog"[\s\S]*?删除这个岗位？[\s\S]*?已有的分析结果将一并删除/);
+  assert.match(controller, /function bindCardMenu[\s\S]*?closeJobCardMenus/);
+  assert.match(controller, /replaceJobById[\s\S]*?analysisInputChanged/);
+  assert.match(controller, /removeJobById[\s\S]*?requests\.invalidate\(null, jobId\)/);
+  assert.match(css, /\.job-card-menu\s*\{[\s\S]*?position: absolute/);
+  assert.match(css, /\.danger-menu-item/);
+});
+
 test("按钮颜色按主次、文字与危险语义统一", async () => {
   const [html, css] = await Promise.all([
     readFile(new URL("src/popup.html", root), "utf8"),

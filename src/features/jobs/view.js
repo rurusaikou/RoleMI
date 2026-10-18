@@ -4,6 +4,7 @@
  */
 import { escapeHtml } from "../../shared/ui/dom.js";
 import { reusableAnalysis } from "../../shared/context/cache.js";
+import { isManualJob } from "./manual.js";
 import { keywordsFor } from "./intelligence.js";
 
 export function jobSearchText(job) {
@@ -22,14 +23,15 @@ export function jobSearchText(job) {
 
 export function jobCard(job, index, selected) {
   const analyzed = Boolean(reusableAnalysis(job));
+  const stale = hasStaleAnalysis(job);
   return jobCardTemplate(job, index, {
     selected,
     favorite: false,
     starTitle: "收藏",
     actions: `
       <div class="job-analysis-footer">
-        <span>${analyzed ? "已有分析结果" : "尚未分析"}</span>
-        <button class="soft-btn" data-action="analyze" type="button">${analyzed ? "查看分析" : "分析岗位"} <i aria-hidden="true">→</i></button>
+        <span>${stale ? "岗位信息已更新 · 建议重新分析" : analyzed ? "已有分析结果" : "尚未分析"}</span>
+        <button class="soft-btn" data-action="analyze" type="button">${stale ? "重新分析" : analyzed ? "查看分析" : "分析岗位"} <i aria-hidden="true">→</i></button>
       </div>
     `
   });
@@ -37,14 +39,15 @@ export function jobCard(job, index, selected) {
 
 export function favoriteCard(job, index) {
   const analyzed = Boolean(reusableAnalysis(job));
+  const stale = hasStaleAnalysis(job);
   return jobCardTemplate(job, index, {
     selected: false,
     favorite: true,
     starTitle: "取消收藏",
     actions: `
       <div class="job-analysis-footer">
-        <span>${analyzed ? "已有分析结果" : "尚未分析"}</span>
-        <button class="soft-btn" data-action="intelligence" type="button">${analyzed ? "查看分析" : "分析岗位"} <i aria-hidden="true">→</i></button>
+        <span>${stale ? "岗位信息已更新 · 建议重新分析" : analyzed ? "已有分析结果" : "尚未分析"}</span>
+        <button class="soft-btn" data-action="intelligence" type="button">${stale ? "重新分析" : analyzed ? "查看分析" : "分析岗位"} <i aria-hidden="true">→</i></button>
       </div>
     `
   });
@@ -61,12 +64,27 @@ function jobCardTemplate(job, index, options) {
           <h2>${escapeHtml(job.title || "未识别职位名")}</h2>
           <p>${escapeHtml(job.company || "公司待核对")}<br>${escapeHtml(metaLine(job))}</p>
         </div>
-        <button class="star-btn ${job.starred ? "active" : ""}" data-action="star" type="button" title="${options.starTitle}" aria-label="${options.starTitle}">★</button>
+        <div class="job-card-actions">
+          <button class="star-btn ${job.starred ? "active" : ""}" data-action="star" type="button" title="${options.starTitle}" aria-label="${options.starTitle}">★</button>
+          <div class="job-card-menu-wrap">
+            <button class="job-more-btn" data-action="more" type="button" aria-label="更多岗位操作" aria-haspopup="menu" aria-expanded="false">⋯</button>
+            <div class="job-card-menu is-hidden" role="menu">
+              ${isManualJob(job) ? `<button data-action="edit" role="menuitem" type="button"><span aria-hidden="true">✎</span>编辑岗位</button>` : ""}
+              <button class="danger-menu-item" data-action="delete" role="menuitem" type="button"><span aria-hidden="true">×</span>删除岗位</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="job-tags">${tags}</div>
       ${options.actions}
     </article>
   `;
+}
+
+// 只把岗位内容版本变化导致的旧分析视为“信息已更新”，不误报 Prompt 版本升级等其他失效原因。
+export function hasStaleAnalysis(job) {
+  const storedVersion = job?.deepAnalysis?.dependencies?.jobVersion;
+  return Boolean(job?.deepAnalysis && storedVersion && storedVersion !== job.contentVersion);
 }
 
 function metaLine(job) {

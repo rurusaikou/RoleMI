@@ -26,7 +26,7 @@ test("自有 JavaScript 源码在首个语句前保留模块说明", async () =>
   }
 });
 
-test("文档与 v3.0.0 Resume Understanding / Match Pipeline 保持一致", async () => {
+test("文档与当前版本的 Resume Understanding / Match Pipeline 保持一致", async () => {
   const [manifestText, readme, changelog, featureSpec, aiPipeline, architecture, dataModel, codeGuide, troubleshooting, popup, debugSource, xlsxSource] = await Promise.all([
     readFile(new URL("manifest.json", root), "utf8"),
     readFile(new URL("README.md", root), "utf8"),

@@ -3,12 +3,12 @@
  * Controller 只连接 DOM、State 与业务动作，不包含 Prompt / Provider 细节。
  */
 import { startUsage, trackUsage } from "../../shared/backend/usage.js";
-import { createManualJob } from "../../features/jobs/manual.js";
+import { analysisInputChanged, createManualJob, isManualJob, updateManualJob } from "../../features/jobs/manual.js";
 import { exportJobs } from "../../features/jobs/export.js";
 import { extractFromCurrentTab } from "../../features/jobs/extract.js";
 import { createExtractionSession, shouldReturnToJobs } from "../../features/jobs/extraction-session.js";
 import { favoriteCard, jobCard, jobSearchText } from "../../features/jobs/view.js";
-import { appendUniqueJob } from "../../features/jobs/repository.js";
+import { appendUniqueJob, removeJobById, replaceJobById } from "../../features/jobs/repository.js";
 import { reusableAnalysis } from "../../shared/context/cache.js";
 import { qs, qsa, setStatus } from "../../shared/ui/dom.js";
 import { requests, state, updateJobs } from "../runtime.js";
@@ -18,6 +18,66 @@ const pendingStars = new Set();
 const EMPTY_HOME_DEFAULT_STATUS = "支持 BOSS 直聘、智联招聘和猎聘";
 const extractionSession = createExtractionSession();
 let extractButtonContents = null;
+// 编辑和删除目标使用稳定 ID；列表搜索与重新渲染都会改变卡片 index。
+let manualEditingJobId = null;
+let manualSaving = false;
+let deletingJobId = null;
+let deletingJob = false;
+
+function closeJobCardMenus({ restoreFocus = false } = {}) {
+  qsa(".job-card-menu:not(.is-hidden)").forEach((menu) => {
+    menu.classList.add("is-hidden");
+    const button = menu.closest(".job-card-menu-wrap")?.querySelector('[data-action="more"]');
+    button?.setAttribute("aria-expanded", "false");
+    if (restoreFocus) button?.focus();
+  });
+}
+
+function resetManualForm() {
+  const form = qs("#manualJobForm");
+  form.reset();
+  manualEditingJobId = null;
+  qs("#manualFormTitle").textContent = "手动添加岗位";
+  qs("#manualFormSubtitle").textContent = "粘贴岗位描述，其他信息可以稍后补充。";
+  qs("#manualSubmitBtn").textContent = "添加岗位";
+  qs("#manualOptionalDetails").open = false;
+  qs("#manualError").textContent = "";
+  qs("#manualDescription").setCustomValidity("");
+  qs("#manualSubmitBtn").disabled = true;
+}
+
+function openManualCreate() {
+  resetManualForm();
+  actions.setView("manual");
+  qs("#manualDescription").focus();
+}
+
+function openManualEdit(jobId) {
+  const job = state.jobs.find((item) => item.id === jobId);
+  if (!isManualJob(job) || manualSaving) return;
+  const form = qs("#manualJobForm");
+  resetManualForm();
+  manualEditingJobId = job.id;
+  for (const field of ["title", "company", "experience", "salary", "description"]) {
+    form.elements.namedItem(field).value = job[field] || "";
+  }
+  qs("#manualFormTitle").textContent = "编辑岗位";
+  qs("#manualFormSubtitle").textContent = "修改手动添加的岗位信息，保存后仍保留原岗位记录。";
+  qs("#manualSubmitBtn").textContent = "保存修改";
+  qs("#manualSubmitBtn").disabled = !qs("#manualDescription").value.trim();
+  qs("#manualOptionalDetails").open = Boolean(job.title || job.company || job.experience || job.salary);
+  actions.setView("manual");
+  qs("#manualDescription").focus();
+}
+
+function requestJobDeletion(jobId) {
+  const job = state.jobs.find((item) => item.id === jobId);
+  if (!job || deletingJob) return;
+  closeJobCardMenus();
+  deletingJobId = job.id;
+  qs("#deleteJobConfirmError").textContent = "";
+  qs("#deleteJobConfirmDialog").showModal();
+}
 
 function setEmptyHomeStatus(message = EMPTY_HOME_DEFAULT_STATUS) {
   qs("#emptyActionStatus").textContent = message;
@@ -82,6 +142,7 @@ export function renderFavorites() {
       const analyzed = Boolean(reusableAnalysis(state.jobs[index]));
       actions.openJob(index, "analysis", "favorites", { analyze: !analyzed });
     });
+    bindCardMenu(card, index);
   });
 }
 
@@ -107,6 +168,36 @@ function bindJobCardActions() {
       event.stopPropagation();
       actions.openJob(index, "analysis", "jobs", { analyze: !reusableAnalysis(state.jobs[index]) });
     });
+    bindCardMenu(card, index);
+  });
+}
+
+function bindCardMenu(card, index) {
+  const moreButton = card.querySelector('[data-action="more"]');
+  const menu = card.querySelector(".job-card-menu");
+  moreButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const opening = menu.classList.contains("is-hidden");
+    closeJobCardMenus();
+    if (!opening) return;
+    menu.classList.remove("is-hidden");
+    moreButton.setAttribute("aria-expanded", "true");
+    menu.querySelector('[role="menuitem"]')?.focus();
+  });
+  menu.addEventListener("click", (event) => event.stopPropagation());
+  menu.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    closeJobCardMenus({ restoreFocus: true });
+  });
+  menu.querySelector('[data-action="edit"]')?.addEventListener("click", () => {
+    const jobId = state.jobs[index]?.id;
+    closeJobCardMenus();
+    if (jobId) openManualEdit(jobId);
+  });
+  menu.querySelector('[data-action="delete"]').addEventListener("click", () => {
+    const jobId = state.jobs[index]?.id;
+    if (jobId) requestJobDeletion(jobId);
   });
 }
 
@@ -134,27 +225,16 @@ export async function toggleStar(index) {
 export function bindJobsEvents() {
   const form = qs("#manualJobForm");
   const description = qs("#manualDescription");
-  let saving = false;
   const syncManualSubmit = () => {
+    const saving = manualSaving;
     qs("#manualSubmitBtn").disabled = saving || !description.value.trim();
   };
-  const resetManual = () => {
-    form.reset();
-    qs("#manualOptionalDetails").open = false;
-    qs("#manualError").textContent = "";
-    description.setCustomValidity("");
-    syncManualSubmit();
-  };
-  const openManualForm = () => {
-    actions.setView("manual");
-    description.focus();
-  };
-  qs("#manualAddBtn").addEventListener("click", openManualForm);
-  qs("#emptyManualAddBtn").addEventListener("click", openManualForm);
+  qs("#manualAddBtn").addEventListener("click", openManualCreate);
+  qs("#emptyManualAddBtn").addEventListener("click", openManualCreate);
   for (const id of ["#manualBackBtn", "#manualCancelBtn"]) {
     qs(id).addEventListener("click", () => {
-      if (saving) return;
-      resetManual();
+      if (manualSaving) return;
+      resetManualForm();
       actions.setView("jobs");
     });
   }
@@ -165,53 +245,68 @@ export function bindJobsEvents() {
   });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (saving) return;
-    const finishUsage = startUsage("jd_manual");
+    if (manualSaving) return;
+    const editingJob = manualEditingJobId ? state.jobs.find((item) => item.id === manualEditingJobId) : null;
+    // jd_manual 衡量新增来源；编辑既不增加岗位，也不重复计入该事件。
+    const finishUsage = editingJob ? () => {} : startUsage("jd_manual");
     let job;
     try {
-      job = createManualJob(Object.fromEntries(new FormData(form)));
+      const fields = Object.fromEntries(new FormData(form));
+      job = editingJob ? updateManualJob(editingJob, fields) : createManualJob(fields);
     } catch (error) {
       finishUsage(false);
       description.setCustomValidity(error.message);
       description.reportValidity();
       return;
     }
-    saving = true;
+    manualSaving = true;
     const controls = [...form.elements, qs("#manualBackBtn")];
     controls.forEach((control) => { control.disabled = true; });
     qs("#manualOptionalDetails").inert = true;
     qs("#manualSubmitBtn").setAttribute("aria-busy", "true");
-    qs("#manualSubmitBtn").textContent = "添加中…";
+    qs("#manualSubmitBtn").textContent = editingJob ? "保存中…" : "添加中…";
     qs("#manualError").textContent = "";
     try {
       let result;
       await updateJobs((jobs) => {
-        result = appendUniqueJob(jobs, job);
+        result = editingJob ? replaceJobById(jobs, job) : appendUniqueJob(jobs, job);
         return result.jobs;
       });
-      if (!result.added) {
+      if (editingJob && result.duplicate) {
+        qs("#manualError").textContent = "已存在相同岗位，未保存修改";
+        return;
+      }
+      if (editingJob && !result.updated) {
+        qs("#manualError").textContent = "原岗位已不存在，请返回岗位池后重试";
+        return;
+      }
+      if (!editingJob && !result.added) {
         finishUsage(true);
         qs("#manualError").textContent = "已存在相同岗位，未重复保存";
         return;
       }
       finishUsage(true);
-      state.navigation.selectedJob = state.jobs.length - 1;
+      const savedIndex = editingJob
+        ? state.jobs.findIndex((item) => item.id === editingJob.id)
+        : state.jobs.length - 1;
+      state.navigation.selectedJob = Math.max(0, savedIndex);
+      if (editingJob && analysisInputChanged(editingJob, job)) requests.invalidate(null, editingJob.id);
       state.navigation.search = "";
       qs("#jobSearch").value = "";
       actions.refresh();
-      resetManual();
+      resetManualForm();
       actions.setView("jobs");
-      setStatus("手动添加成功，已保存到岗位池");
+      setStatus(editingJob ? "岗位修改已保存" : "手动添加成功，已保存到岗位池");
       qs(`#jobList [data-job="${state.navigation.selectedJob}"]`)?.scrollIntoView({ block: "nearest" });
     } catch (error) {
       finishUsage(false);
-      qs("#manualError").textContent = error.message || "添加失败，请重试";
+      qs("#manualError").textContent = error.message || (editingJob ? "保存修改失败，请重试" : "添加失败，请重试");
     } finally {
-      saving = false;
+      manualSaving = false;
       controls.forEach((control) => { control.disabled = false; });
       qs("#manualOptionalDetails").inert = false;
       qs("#manualSubmitBtn").removeAttribute("aria-busy");
-      qs("#manualSubmitBtn").textContent = "添加岗位";
+      qs("#manualSubmitBtn").textContent = manualEditingJobId ? "保存修改" : "添加岗位";
       syncManualSubmit();
     }
   });
@@ -271,6 +366,61 @@ export function bindJobsEvents() {
   qs("#jobSearch").addEventListener("input", (event) => renderJobs(event.target.value));
   qs("#exportAllBtn").addEventListener("click", () => exportJobs(state.jobs, qs("#exportAllBtn"), "暂无岗位", state.resumeState.data, "全部岗位"));
   qs("#exportFavoritesBtn").addEventListener("click", () => exportJobs(state.jobs.filter((job) => job.starred), qs("#exportFavoritesBtn"), "暂无收藏", state.resumeState.data, "收藏岗位"));
+  document.addEventListener("click", () => closeJobCardMenus());
+
+  const deleteDialog = qs("#deleteJobConfirmDialog");
+  deleteDialog.addEventListener("cancel", (event) => {
+    if (deletingJob) event.preventDefault();
+    else deletingJobId = null;
+  });
+  qs("#cancelDeleteJobBtn").addEventListener("click", () => {
+    if (deletingJob) return;
+    deletingJobId = null;
+    deleteDialog.close();
+  });
+  qs("#confirmDeleteJobBtn").addEventListener("click", async () => {
+    if (deletingJob || !deletingJobId) return;
+    const jobId = deletingJobId;
+    const oldIndex = state.jobs.findIndex((job) => job.id === jobId);
+    if (oldIndex < 0) {
+      deletingJobId = null;
+      deleteDialog.close();
+      return;
+    }
+    deletingJob = true;
+    const button = qs("#confirmDeleteJobBtn");
+    const cancelButton = qs("#cancelDeleteJobBtn");
+    const errorText = qs("#deleteJobConfirmError");
+    button.disabled = true;
+    cancelButton.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    button.textContent = "删除中…";
+    errorText.textContent = "";
+    try {
+      // 先让该岗位的在途 AI 请求失效，防止删除完成后迟到结果把旧对象写回。
+      requests.invalidate(null, jobId);
+      await updateJobs((jobs) => removeJobById(jobs, jobId));
+      if (state.navigation.selectedJob > oldIndex) state.navigation.selectedJob -= 1;
+      else if (state.navigation.selectedJob === oldIndex) {
+        state.navigation.selectedJob = Math.min(oldIndex, Math.max(0, state.jobs.length - 1));
+      }
+      actions.refresh();
+      setStatus("岗位已删除");
+      deletingJobId = null;
+      deleteDialog.close();
+    } catch (error) {
+      const message = error.message || "删除岗位失败，请重试";
+      setStatus(message);
+      errorText.textContent = message;
+    } finally {
+      deletingJob = false;
+      button.disabled = false;
+      cancelButton.disabled = false;
+      button.removeAttribute("aria-busy");
+      button.textContent = "删除";
+    }
+  });
+
   let clearingJobs = false;
   const clearDialog = qs("#clearConfirmDialog");
   qs("#clearBtn").addEventListener("click", () => {
@@ -300,6 +450,7 @@ export function bindJobsEvents() {
       invalidateExtraction();
       requests.invalidate();
       await updateJobs(() => []);
+      deletingJobId = null;
       state.navigation.selectedJob = 0;
       actions.refresh();
       setEmptyHomeStatus();

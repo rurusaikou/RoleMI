@@ -78,7 +78,7 @@
 
       <section id="manualView" class="view">
         <div class="sub-header"><button id="manualBackBtn" class="back-inline" type="button">‹ 返回</button></div>
-        <div class="view-title manual-title"><div><h1>手动添加岗位</h1><p>粘贴岗位描述，其他信息可以稍后补充。</p></div></div>
+        <div class="view-title manual-title"><div><h1 id="manualFormTitle">手动添加岗位</h1><p id="manualFormSubtitle">粘贴岗位描述，其他信息可以稍后补充。</p></div></div>
         <form id="manualJobForm" class="manual-form">
           <label class="manual-description-label" for="manualDescription">岗位描述 <span>必填 · 最多 2000 字</span></label>
           <textarea id="manualDescription" name="description" required maxlength="2000" aria-describedby="manualError" placeholder="粘贴岗位职责和任职要求……"></textarea>
@@ -327,6 +327,16 @@
         <div class="confirm-actions">
           <button id="cancelClearBtn" class="soft-btn" type="button">取消</button>
           <button id="confirmClearBtn" class="danger-primary" type="button">清空岗位</button>
+        </div>
+      </dialog>
+
+      <dialog id="deleteJobConfirmDialog" class="confirm-dialog" aria-labelledby="deleteJobConfirmTitle" aria-describedby="deleteJobConfirmText">
+        <h2 id="deleteJobConfirmTitle">删除这个岗位？</h2>
+        <p id="deleteJobConfirmText">删除后，该岗位及已有的分析结果将一并删除，且无法恢复。</p>
+        <p id="deleteJobConfirmError" class="confirm-error" role="alert"></p>
+        <div class="confirm-actions">
+          <button id="cancelDeleteJobBtn" class="soft-btn" type="button">取消</button>
+          <button id="confirmDeleteJobBtn" class="danger-primary" type="button">删除</button>
         </div>
       </dialog>
 

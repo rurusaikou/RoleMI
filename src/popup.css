@@ -575,6 +575,8 @@ ul {
 
 .job-card > :not(.job-card-detail-hit) { position: relative; z-index: 2; pointer-events: none; }
 .job-card .star-btn,
+.job-card .job-more-btn,
+.job-card .job-card-menu,
 .job-card .job-analysis-footer button { pointer-events: auto; }
 
 .job-card:has(.job-card-detail-hit:focus-visible) {
@@ -600,6 +602,13 @@ ul {
 
 .job-top { align-items: flex-start; }
 
+.job-card-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  gap: 0;
+}
+
 .job-top .star-btn {
   flex: 0 0 32px;
   width: 32px;
@@ -609,6 +618,66 @@ ul {
   line-height: 32px;
   text-align: center;
 }
+
+.job-more-btn {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  margin-top: -6px;
+  padding: 0;
+  line-height: 32px;
+  text-align: center;
+}
+
+.job-card-menu-wrap { position: relative; }
+
+.job-more-btn {
+  border: 0;
+  color: #7a879b;
+  background: transparent;
+  font-size: 20px;
+  letter-spacing: 1px;
+}
+
+.job-more-btn:not(:disabled):hover,
+.job-more-btn[aria-expanded="true"] {
+  color: var(--primary);
+  background: #f3f7ff;
+}
+
+.job-card-menu {
+  position: absolute;
+  z-index: 8;
+  top: 32px;
+  right: 0;
+  min-width: 126px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(31, 53, 84, 0.14);
+}
+
+.job-card-menu button {
+  display: flex;
+  width: 100%;
+  min-height: 32px;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 9px;
+  color: #465063;
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+}
+
+.job-card-menu button:hover,
+.job-card-menu button:focus-visible { background: #f4f7fb; }
+.job-card-menu .danger-menu-item { color: var(--danger); }
+.job-card-menu .danger-menu-item:hover,
+.job-card-menu .danger-menu-item:focus-visible { background: #fff5f4; }
 
 .job-top h2 {
   margin-bottom: 6px;

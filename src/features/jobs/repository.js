@@ -38,6 +38,31 @@ export function appendUniqueJob(jobs, job) {
   };
 }
 
+/** 按稳定 ID 原位替换岗位；重复校验排除被编辑岗位自身。 */
+export function replaceJobById(jobs, replacement) {
+  const normalizedJobs = jobs.map(normalizeJobForUi);
+  const index = normalizedJobs.findIndex((job) => job.id === replacement?.id);
+  if (index < 0) return { jobs: normalizedJobs, updated: false, duplicate: false };
+
+  const normalizedReplacement = normalizeJobForUi(replacement);
+  const replacementKey = jobDedupeKey(normalizedReplacement);
+  const duplicate = Boolean(replacementKey && normalizedJobs.some((job, jobIndex) => (
+    jobIndex !== index && jobDedupeKey(job) === replacementKey
+  )));
+  if (duplicate) return { jobs: normalizedJobs, updated: false, duplicate: true };
+
+  return {
+    jobs: normalizedJobs.map((job, jobIndex) => jobIndex === index ? normalizedReplacement : job),
+    updated: true,
+    duplicate: false
+  };
+}
+
+export function removeJobById(jobs, jobId) {
+  // 删除完整 Job 对象即可同步移除其内嵌的收藏、分析、匹配和沟通结果。
+  return jobs.filter((job) => job.id !== jobId);
+}
+
 // 首条记录优先：重复提取不覆盖已有收藏和 AI 结果，也不会刷新 JD 原文。
 export function dedupeJobs(jobs) {
   const seen = new Set();
