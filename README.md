@@ -70,9 +70,9 @@ RoleMI 目前为个人维护项目，为控制 AI 服务成本并保证服务稳
 
 ## 项目状态
 
-当前版本：**v3.0.0**
+当前版本：**v3.1.0**
 
-> RoleMI 刚刚上线 Microsoft Edge Add-ons，目前商店搜索索引可能尚未完成。如果暂时无法通过搜索找到 RoleMI，请通过上方官方商店链接安装。
+RoleMI 上线 Microsoft Edge Add-ons。在Edge插件浏览器商城搜索🔍：**RoleMI**。
 
 ## 支持 RoleMI
 
