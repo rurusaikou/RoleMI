@@ -70,7 +70,12 @@ test('BOSS extracts the right detail and resolves company/location from the matc
   });
   const document = node('', {
     '.job-detail-container .job-detail-box': detail,
-    ".job-card-box a.job-name[href*='/job_detail/']": [unrelatedLink, matchingLink]
+    ".job-card-box a.job-name[href*='/job_detail/']": [unrelatedLink, matchingLink],
+    // 两种结构同时存在时仍必须优先原搜索页路径，不能被新增分支覆盖。
+    '.job-banner .job-primary.detail-box': node('', {
+      '.info-primary .name h1': node('错误的独立页标题')
+    }),
+    '.job-keyword-list + .job-sec-text': node('错误的独立页正文')
   });
 
   const response = extractWithDocument(document, `https://www.zhipin.com/job_detail/${jobId}.html`);
@@ -127,6 +132,41 @@ test('BOSS extracts description when a new layout wraps or renames the paragraph
   assert.equal(response.ok, true);
   assert.equal(response.job.title, '社群销售');
   assert.equal(response.job.description, '负责社群运营、客户沟通和销售转化，完成业务目标并持续优化服务流程。');
+});
+
+test('BOSS extracts the standalone job_detail DOM without changing the search-panel path', () => {
+  const header = node('', {
+    '.info-primary .name h1': node('民宿B端商家AI产品经理'),
+    '.info-primary .name .salary': node('30-50K·15薪'),
+    '.info-primary .text-city': node('上海'),
+    '.info-primary .text-experiece': node('3-5年'),
+    '.info-primary .text-degree': node('本科')
+  });
+  const description = node('kanzhun岗位职责:\n1. 深入使用商家端产品，准确识别商家痛点并推动AI落地。', {
+    span: [node('kanzhun')]
+  });
+  const document = node('', {
+    '.job-banner .job-primary.detail-box': header,
+    ".sider-company .company-info a[ka='job-detail-company_custompage']": node('美团'),
+    '.job-keyword-list + .job-sec-text': description
+  });
+  const href = 'https://www.zhipin.com/job_detail/afeca8959519f3020nFy39y5GVBX.html?ka=hot-job-2';
+
+  const response = extractWithDocument(document, href);
+
+  assert.equal(response.ok, true);
+  assert.deepEqual({ ...response.job }, {
+    title: '民宿B端商家AI产品经理',
+    company: '美团',
+    location: '上海',
+    experience: '3-5年',
+    education: '本科',
+    salary: '30-50K·15薪',
+    description: '岗位职责:\n1. 深入使用商家端产品，准确识别商家痛点并推动AI落地。',
+    postedDate: '',
+    sourceSite: 'boss直聘',
+    sourceUrl: href
+  });
 });
 
 test('Liepin extracts all core fields and normalizes the posted date', () => {

@@ -199,9 +199,9 @@
     if (!/zhipin\.com/i.test(location.hostname)) return null;
 
     // BOSS 搜索页右侧详情面板加载完成后会出现这个容器。
-    // 如果用户还停留在列表加载态，或者页面结构换了，这里返回 null 并提示用户核对页面。
+    // 原容器不存在时才检查独立详情页，确保已经验证的搜索页路径不受影响。
     const detailBox = document.querySelector(".job-detail-container .job-detail-box");
-    if (!detailBox) return null;
+    if (!detailBox) return extractZhipinStandaloneJob();
 
     // 右侧详情头部只包含当前选中职位，不会混入左侧列表的其他岗位。
     const salary = normalizeSalary(firstText([
@@ -235,6 +235,45 @@
       sourceSite: "boss直聘",
       sourceUrl: location.href
     };
+  }
+
+  function extractZhipinStandaloneJob() {
+    // /job_detail/*.html 使用 job-banner 作为岗位头部，与搜索页右侧面板是两套独立 DOM。
+    const header = document.querySelector(".job-banner .job-primary.detail-box");
+    if (!header) return null;
+
+    const salary = normalizeSalary(firstText([".info-primary .name .salary"], header));
+    const descriptionNode = document.querySelector(".job-keyword-list + .job-sec-text")
+      || document.querySelector(".job-detail .job-sec-text");
+
+    // 头部字段全部限制在当前岗位横幅内；text-experiece 是站点真实拼写，不能自行改成 experience。
+    // 公司使用独立页专属 ka 属性，避免把顶部导航或右侧“查看全部职位”识别成公司名。
+    return {
+      ...EMPTY_JOB,
+      title: cleanTitle(firstText([".info-primary .name h1"], header), salary),
+      company: cleanCompanyName(firstText([
+        ".sider-company .company-info a[ka='job-detail-company_custompage']"
+      ])),
+      location: firstText([".info-primary .text-city"], header),
+      experience: firstText([".info-primary .text-experiece"], header),
+      education: firstText([".info-primary .text-degree"], header),
+      salary,
+      description: textWithoutZhipinNoise(descriptionNode),
+      sourceSite: "boss直聘",
+      sourceUrl: location.href
+    };
+  }
+
+  function textWithoutZhipinNoise(node) {
+    let text = textOf(node);
+    if (!node || !text) return text;
+
+    // BOSS 会在正文词语中插入随机 class 的品牌 span；只移除已确认的干扰 span 文本。
+    const noise = Array.from(node.querySelectorAll("span"))
+      .map((span) => textOf(span))
+      .filter((value) => /^(?:BOSS直聘|kanzhun)$/i.test(value));
+    for (const value of noise) text = text.split(value).join("");
+    return cleanText(text);
   }
 
   function extractZhipinDescription(detailBox) {
