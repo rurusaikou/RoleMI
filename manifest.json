@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "RoleMI",
   "description": "Capture job descriptions, analyze fit with your resume, and generate actionable application guidance.",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "minimum_chrome_version": "114",
   "action": {
     "default_title": "RoleMI",
