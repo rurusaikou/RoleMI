@@ -9,6 +9,24 @@ test("全部岗位与收藏岗位使用不同的导出文件名", () => {
   assert.equal(exportFilename("未知范围", "2026-10-04"), "RoleMI-全部岗位-2026-10-04.xlsx");
 });
 
+
+test("导出把岗位唯一标识作为单独一列", () => {
+  const [row] = jobRows([{ ...legacyJob, id: "job_abc" }]);
+  assert.equal(row["唯一标识"], "job_abc");
+  assert.equal(Object.keys(row)[0], "唯一标识");
+});
+test("导出包含公司行业、融资阶段和规模", () => {
+  const [row] = jobRows([{
+    ...legacyJob,
+    companyIndustry: "通信/网络设备",
+    companyStage: "未融资",
+    companyScale: "10000人以上"
+  }]);
+  assert.equal(row["行业"], "通信/网络设备");
+  assert.equal(row["融资阶段"], "未融资");
+  assert.equal(row["公司规模"], "10000人以上");
+});
+
 test("用户导出的岗位字段不包含 Token 或内部用量", () => {
   const [row] = jobRows([{
     ...legacyJob,

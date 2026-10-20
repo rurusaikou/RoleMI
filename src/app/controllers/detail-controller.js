@@ -5,6 +5,7 @@
 import { cachedUsage } from "../../shared/backend/usage.js";
 import { reusableAnalysis } from "../../shared/context/cache.js";
 import { copyText, flashButton, qs, qsa, setStatus } from "../../shared/ui/dom.js";
+import { companyFactsLine } from "../../features/jobs/view.js";
 import { renderDeepAnalysis } from "../../features/jd-analysis/view.js";
 import { validateJobForAnalysis } from "../../features/jd-analysis/result.js";
 import { runDeepAnalysis } from "../task-runner.js";
@@ -31,6 +32,9 @@ export function renderDetail() {
   qs("#detailMeta").textContent = `${job.company || "公司待核对"} · ${metaLine(job)}`;
   qs("#jdFullTitle").textContent = job.title || "-";
   qs("#jdFullCompany").textContent = [job.company, job.location].filter(Boolean).join(" · ") || "-";
+  const facts = companyFactsLine(job);
+  qs("#jdFullCompanyFacts").textContent = facts || "-";
+  qs("#jdCompanyFactsRow").classList.toggle("is-hidden", !facts);
   qs("#jdFullMeta").textContent = [job.experience, job.education, job.postedDate, job.sourceSite].filter(Boolean).join(" · ") || "-";
   qs("#jdFullSalary").textContent = job.salary || "-";
   qs("#jdDetailText").textContent = job.description || "当前提取结果没有岗位描述，请核对招聘页面结构。";

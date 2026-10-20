@@ -89,6 +89,9 @@ export function normalizeJobForUi(job) {
     summary: job?.summary || null,
     title: job && job.title ? job.title : "",
     company: job && job.company ? job.company : "",
+    companyIndustry: job && job.companyIndustry ? job.companyIndustry : "",
+    companyStage: job && job.companyStage ? job.companyStage : "",
+    companyScale: job && job.companyScale ? job.companyScale : "",
     location: job && job.location ? job.location : "",
     experience: job && job.experience ? job.experience : "",
     education: job && job.education ? job.education : "",
@@ -119,20 +122,14 @@ function normalizeForDedupe(value) {
     .toLowerCase();
 }
 
-// 手动录入用基本信息与正文去重；网页提取保留原有身份规则。
+// 同一公司、岗位、地点和 JD 视为一条机会。URL、薪资不参与身份。
 function jobDedupeKey(job) {
-  const sourceUrl = normalizeForDedupe(job.sourceUrl);
-  const identity = [
-    normalizeForDedupe(job.title),
-    normalizeForDedupe(job.company),
-    normalizeForDedupe(job.location),
-    normalizeForDedupe(job.salary)
-  ].filter(Boolean).join("|");
-
-  if (job.sourceSite === "手动添加" && !sourceUrl) {
-    return JSON.stringify(["manual", identity, normalizeForDedupe(job.experience), normalizeForDedupe(job.description)]);
-  }
-  return sourceUrl ? `${sourceUrl}|${identity}` : identity;
+  const company = normalizeForDedupe(job.company);
+  const title = normalizeForDedupe(job.title);
+  const location = normalizeForDedupe(job.location);
+  const description = normalizeForDedupe(job.description);
+  if (!company && !title && !description) return "";
+  return `${company}|${title}|${location}|${description}`;
 }
 
 function normalizeStoredResumeMatch(match) {

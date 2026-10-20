@@ -87,6 +87,10 @@ export function hasStaleAnalysis(job) {
   return Boolean(job?.deepAnalysis && storedVersion && storedVersion !== job.contentVersion);
 }
 
+export function companyFactsLine(job) {
+  return [job?.companyIndustry, job?.companyStage, job?.companyScale].filter(Boolean).join(" · ");
+}
+
 function metaLine(job) {
   return [job.location, job.salary, job.experience, job.education].filter(Boolean).join(" · ") || "岗位信息待核对";
 }

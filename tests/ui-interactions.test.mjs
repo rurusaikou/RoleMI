@@ -279,3 +279,22 @@ test("更换简历与重新分析使用同一紧凑按钮规格", async () => {
   assert.equal((html.match(/compact-secondary/g) || []).length, 2);
   assert.match(css, /\.compact-secondary\.compact-secondary\s*\{[\s\S]*?min-width: 78px;[\s\S]*?height: 30px;[\s\S]*?padding: 0 10px;/);
 });
+
+test("岗位详情把行业、融资和规模拼成公司信息", async () => {
+  const { companyFactsLine } = await import("../src/features/jobs/view.js");
+  assert.equal(companyFactsLine({
+    companyIndustry: "通信/网络设备",
+    companyStage: "未融资",
+    companyScale: "10000人以上"
+  }), "通信/网络设备 · 未融资 · 10000人以上");
+  assert.equal(companyFactsLine({ companyScale: "10000人以上" }), "10000人以上");
+  assert.equal(companyFactsLine({}), "");
+
+  const [html, controller] = await Promise.all([
+    readFile(new URL("src/popup.html", root), "utf8"),
+    readFile(new URL("src/app/controllers/detail-controller.js", root), "utf8")
+  ]);
+  assert.match(html, /id="jdCompanyFactsRow"[\s\S]*?<dt>公司信息<\/dt>[\s\S]*?id="jdFullCompanyFacts"/);
+  assert.match(controller, /companyFactsLine\(job\)/);
+  assert.match(controller, /jdCompanyFactsRow[\s\S]*?is-hidden/);
+});
