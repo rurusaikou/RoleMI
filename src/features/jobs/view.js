@@ -88,6 +88,7 @@ export function hasStaleAnalysis(job) {
 }
 
 export function companyFactsLine(job) {
+  // 公司画像是可选补充字段；缺失时不显示空占位，也不影响岗位详情和分析入口。
   return [job?.companyIndustry, job?.companyStage, job?.companyScale].filter(Boolean).join(" · ");
 }
 

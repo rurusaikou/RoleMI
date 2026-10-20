@@ -50,6 +50,7 @@ export function jobRows(jobs, resume) {
       "唯一标识": job.id || "",
       "岗位": job.title || "",
       "公司": job.company || "",
+      // 三项公司画像可能只在 BOSS 独立详情页出现；保留空列以维持不同来源 Excel 的固定表头。
       "行业": job.companyIndustry || "",
       "融资阶段": job.companyStage || "",
       "公司规模": job.companyScale || "",

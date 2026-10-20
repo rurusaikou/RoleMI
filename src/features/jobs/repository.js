@@ -122,7 +122,7 @@ function normalizeForDedupe(value) {
     .toLowerCase();
 }
 
-// 同一公司、岗位、地点和 JD 视为一条机会。URL、薪资不参与身份。
+// URL 可能带追踪参数、薪资也会动态变化；用稳定事实和完整 JD 去重，避免同一机会被重复保存。
 function jobDedupeKey(job) {
   const company = normalizeForDedupe(job.company);
   const title = normalizeForDedupe(job.title);

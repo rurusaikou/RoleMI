@@ -330,6 +330,7 @@
     const companyName = firstText([".sider-company .company-info a[ka='job-detail-company_custompage']"]);
     const classified = classifyZhipinCompanyFacts(siderCompanyFactTexts(), companyName);
     return {
+      // BOSS 的 ka 属性比展示层级稳定；灰度页面缺少 ka 时才使用侧栏文本分类结果。
       companyIndustry: firstText([".sider-company a[ka='job-detail-company_industry']"]) || classified.companyIndustry,
       companyStage: firstText([".sider-company a[ka='job-detail-company_stage']"]) || classified.companyStage,
       companyScale: firstText([".sider-company a[ka='job-detail-company_scale']"]) || classified.companyScale
@@ -346,6 +347,7 @@
 
   function classifyZhipinCompanyFacts(values, companyName) {
     const facts = { companyIndustry: "", companyStage: "", companyScale: "" };
+    // 同一文字可能从子节点和侧栏容器重复读到；每类只接受首个有效值，避免后续大段文本覆盖。
     for (const value of values) applyCompanyFactText(facts, cleanText(value), companyName);
     return facts;
   }
@@ -364,6 +366,7 @@
     }
     if (facts.companyIndustry) return;
 
+    // 行业没有可靠格式，只能在剔除公司名、融资和规模后保守接收短文本，防止整段公司介绍误入岗位数据。
     const leftover = cleanText(
       text
         .replace(COMPANY_STAGE_PATTERN, " ")

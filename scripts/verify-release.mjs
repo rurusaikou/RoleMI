@@ -6,7 +6,7 @@ const failures = [];
 if (!fs.existsSync(dist)) failures.push("dist/store does not exist; run build:store first");
 else {
   const manifest = JSON.parse(fs.readFileSync(path.join(dist, "manifest.json"), "utf8"));
-  if (manifest.version !== "3.1.1") failures.push("manifest version is not 3.1.1");
+  if (manifest.version !== "3.2.0") failures.push("manifest version is not 3.2.0");
   if (manifest.content_scripts) failures.push("store manifest must not contain persistent content_scripts");
   if ((manifest.host_permissions || []).some(x => x.includes("<all_urls>") || x.includes("localhost"))) failures.push("store host_permissions contains broad/local development access");
   const cfg = fs.readFileSync(path.join(dist, "src/shared/backend/config.js"), "utf8");
