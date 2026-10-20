@@ -83,6 +83,9 @@ test('BOSS extracts the right detail and resolves company/location from the matc
   assert.deepEqual({ ...response.job }, {
     title: '运动健康类 AI 产品经理',
     company: '安赋网络',
+    companyIndustry: '',
+    companyStage: '',
+    companyScale: '',
     location: '上海·黄浦区',
     experience: '1-3年',
     education: '本科',
@@ -158,6 +161,9 @@ test('BOSS extracts the standalone job_detail DOM without changing the search-pa
   assert.deepEqual({ ...response.job }, {
     title: '民宿B端商家AI产品经理',
     company: '美团',
+    companyIndustry: '',
+    companyStage: '',
+    companyScale: '',
     location: '上海',
     experience: '3-5年',
     education: '本科',
@@ -167,6 +173,108 @@ test('BOSS extracts the standalone job_detail DOM without changing the search-pa
     sourceSite: 'boss直聘',
     sourceUrl: href
   });
+});
+
+test('BOSS standalone job_detail extracts company industry, stage and scale', () => {
+  const header = node('', {
+    '.info-primary .name h1': node('全栈开发工程师'),
+    '.info-primary .name .salary': node('25-45K·16薪'),
+    '.info-primary .text-city': node('上海'),
+    '.info-primary .text-experiece': node('经验不限'),
+    '.info-primary .text-degree': node('本科')
+  });
+  const document = node('', {
+    '.job-banner .job-primary.detail-box': header,
+    ".sider-company .company-info a[ka='job-detail-company_custompage']": node('浩鲸科技'),
+    ".sider-company a[ka='job-detail-company_industry']": node('通信/网络设备'),
+    ".sider-company a[ka='job-detail-company_stage']": node('未融资'),
+    ".sider-company a[ka='job-detail-company_scale']": node('10000人以上'),
+    '.job-keyword-list + .job-sec-text': node('负责Web端及全栈开发工作。')
+  });
+  const href = 'https://www.zhipin.com/job_detail/f69ba4af90dde0250nx42d6_FFpZ.html';
+  const response = extractWithDocument(document, href);
+
+  assert.equal(response.ok, true);
+  assert.equal(response.job.company, '浩鲸科技');
+  assert.equal(response.job.companyIndustry, '通信/网络设备');
+  assert.equal(response.job.companyStage, '未融资');
+  assert.equal(response.job.companyScale, '10000人以上');
+});
+
+test('BOSS classifies unlabeled sider-company facts by text', () => {
+  const header = node('', {
+    '.info-primary .name h1': node('全栈开发工程师'),
+    '.info-primary .name .salary': node('25-45K'),
+    '.info-primary .text-city': node('上海'),
+    '.info-primary .text-experiece': node('经验不限'),
+    '.info-primary .text-degree': node('本科')
+  });
+  const document = node('', {
+    '.job-banner .job-primary.detail-box': header,
+    ".sider-company .company-info a[ka='job-detail-company_custompage']": node('叠纸游戏'),
+    '.sider-company a': [
+      node('叠纸游戏'),
+      node('未融资'),
+      node('10000人以上'),
+      node('游戏'),
+      node('查看全部职位')
+    ],
+    '.job-keyword-list + .job-sec-text': node('负责游戏客户端与服务端开发。')
+  });
+  const response = extractWithDocument(document, 'https://www.zhipin.com/job_detail/abc.html');
+
+  assert.equal(response.ok, true);
+  assert.equal(response.job.company, '叠纸游戏');
+  assert.equal(response.job.companyStage, '未融资');
+  assert.equal(response.job.companyScale, '10000人以上');
+  assert.equal(response.job.companyIndustry, '游戏');
+});
+
+test('BOSS reads company scale and stage from sider-company text, not only links', () => {
+  const header = node('', {
+    '.info-primary .name h1': node('Agent开发（Java+大数据背景）'),
+    '.info-primary .name .salary': node('18-23K'),
+    '.info-primary .text-city': node('上海'),
+    '.info-primary .text-experiece': node('3-5年'),
+    '.info-primary .text-degree': node('大专')
+  });
+  const document = node('', {
+    '.job-banner .job-primary.detail-box': header,
+    ".sider-company .company-info a[ka='job-detail-company_custompage']": node('浩鲸科技'),
+    '.sider-company a': [node('浩鲸科技'), node('查看全部职位')],
+    '.sider-company p': [node('未融资'), node('10000人以上'), node('通信/网络设备')],
+    '.sider-company': node('浩鲸科技\n未融资\n10000人以上\n通信/网络设备\n查看全部职位'),
+    '.job-keyword-list + .job-sec-text': node('负责大模型的开发工作，包含模型搭建、训练及优化。')
+  });
+  const response = extractWithDocument(document, 'https://www.zhipin.com/job_detail/agent.html');
+
+  assert.equal(response.ok, true);
+  assert.equal(response.job.company, '浩鲸科技');
+  assert.equal(response.job.companyIndustry, '通信/网络设备');
+  assert.equal(response.job.companyStage, '未融资');
+  assert.equal(response.job.companyScale, '10000人以上');
+});
+
+test('BOSS pulls company scale out of a glued company-info line', () => {
+  const header = node('', {
+    '.info-primary .name h1': node('Agent开发（Java+大数据背景）'),
+    '.info-primary .name .salary': node('18-23K'),
+    '.info-primary .text-city': node('上海'),
+    '.info-primary .text-experiece': node('3-5年'),
+    '.info-primary .text-degree': node('大专')
+  });
+  const document = node('', {
+    '.job-banner .job-primary.detail-box': header,
+    ".sider-company .company-info a[ka='job-detail-company_custompage']": node('浩鲸科技'),
+    '.sider-company': node('未融资10000人以上通信/网络设备'),
+    '.job-keyword-list + .job-sec-text': node('负责大模型的开发工作，包含模型搭建、训练及优化。')
+  });
+  const response = extractWithDocument(document, 'https://www.zhipin.com/job_detail/agent.html');
+
+  assert.equal(response.ok, true);
+  assert.equal(response.job.companyScale, '10000人以上');
+  assert.equal(response.job.companyStage, '未融资');
+  assert.equal(response.job.companyIndustry, '通信/网络设备');
 });
 
 test('Liepin extracts all core fields and normalizes the posted date', () => {

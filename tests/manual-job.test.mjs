@@ -22,6 +22,28 @@ test('manual JD dedupe preserves different descriptions and existing favorites',
   assert.equal(appendUniqueJob([bare], bare).added, false);
 });
 
+test('same company, title, location and JD are one posting even with different URLs', () => {
+  const posting = {
+    title: '全栈开发工程师',
+    company: '浩鲸科技',
+    location: '上海·杨浦区·五角场',
+    salary: '25-45K·16薪',
+    description: '负责Web端及全栈开发工作。',
+    sourceSite: 'boss直聘'
+  };
+  const first = { ...posting, sourceUrl: 'https://www.zhipin.com/job_detail/aaa.html?ka=1', starred: true };
+  const again = { ...posting, salary: '25-45K', sourceUrl: 'https://www.zhipin.com/job_detail/aaa.html?securityId=zzz' };
+  const duplicate = appendUniqueJob([first], again);
+
+  assert.equal(duplicate.added, false);
+  assert.equal(duplicate.jobs.length, 1);
+  assert.equal(duplicate.jobs[0].starred, true);
+  assert.equal(duplicate.jobs[0].salary, '25-45K·16薪');
+  assert.equal(appendUniqueJob([first], { ...posting, location: '北京' }).added, true);
+  assert.equal(appendUniqueJob([first], { ...posting, description: '另一份岗位描述。' }).added, true);
+  assert.equal(appendUniqueJob([first], { ...posting, company: '叠纸游戏' }).added, true);
+});
+
 test('manual JD persists with source, metadata and content identity', async () => {
   installStorage();
   const job = createManualJob({ company: ' 公司 · 上海 ', experience: '本科 · 三年', salary: '30K', description: '完整 JD\n要求' });
@@ -32,6 +54,23 @@ test('manual JD persists with source, metadata and content identity', async () =
   assert.equal(restored[0].company, '公司 · 上海');
   assert.equal(restored[0].sourceSite, '手动添加');
   assert.equal(restored[0].description, job.description);
+});
+
+test('persists extracted company industry, stage and scale', async () => {
+  installStorage();
+  await setJobs([{
+    title: '全栈开发工程师',
+    company: '浩鲸科技',
+    companyIndustry: '通信/网络设备',
+    companyStage: '未融资',
+    companyScale: '10000人以上',
+    description: '负责Web端及全栈开发工作。',
+    sourceUrl: 'https://www.zhipin.com/job_detail/x.html'
+  }]);
+  const [restored] = await getJobs();
+  assert.equal(restored.companyIndustry, '通信/网络设备');
+  assert.equal(restored.companyStage, '未融资');
+  assert.equal(restored.companyScale, '10000人以上');
 });
 
 test('manual job update keeps identity, favorite and derived results without creating another job', async () => {

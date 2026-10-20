@@ -47,8 +47,12 @@ export function jobRows(jobs, resume) {
     }) ? job.greeting : {};
     const greetingResult = greeting.result || {};
     return {
+      "唯一标识": job.id || "",
       "岗位": job.title || "",
       "公司": job.company || "",
+      "行业": job.companyIndustry || "",
+      "融资阶段": job.companyStage || "",
+      "公司规模": job.companyScale || "",
       "工作地点": job.location || "",
       "工作经验": job.experience || "",
       "学历要求": job.education || "",

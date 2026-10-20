@@ -70,6 +70,9 @@ test('extracts the current job from Zhaopin search/recommend right detail panel'
     assert.deepEqual({ ...response.job }, {
       title: '系统产品经理（J10804）',
       company: '北京跃瀚科技有限责任公司',
+      companyIndustry: '',
+      companyStage: '',
+      companyScale: '',
       location: '北京·西城区·西便门',
       experience: '1-3年',
       education: '本科',

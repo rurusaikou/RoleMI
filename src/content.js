@@ -31,6 +31,9 @@
   const EMPTY_JOB = {
     title: "",
     company: "",
+    companyIndustry: "",
+    companyStage: "",
+    companyScale: "",
     location: "",
     experience: "",
     education: "",
@@ -225,6 +228,7 @@
 
     return {
       ...EMPTY_JOB,
+      ...extractZhipinCompanyProfile(),
       title,
       company: cardInfo.company,
       location: cardInfo.location || tags[0] || "",
@@ -250,6 +254,7 @@
     // 公司使用独立页专属 ka 属性，避免把顶部导航或右侧“查看全部职位”识别成公司名。
     return {
       ...EMPTY_JOB,
+      ...extractZhipinCompanyProfile(),
       title: cleanTitle(firstText([".info-primary .name h1"], header), salary),
       company: cleanCompanyName(firstText([
         ".sider-company .company-info a[ka='job-detail-company_custompage']"
@@ -319,6 +324,63 @@
       company: cleanCompanyName(textOf(companyNode)),
       location: cleanText(textOf(locationNode))
     };
+  }
+
+  function extractZhipinCompanyProfile() {
+    const companyName = firstText([".sider-company .company-info a[ka='job-detail-company_custompage']"]);
+    const classified = classifyZhipinCompanyFacts(siderCompanyFactTexts(), companyName);
+    return {
+      companyIndustry: firstText([".sider-company a[ka='job-detail-company_industry']"]) || classified.companyIndustry,
+      companyStage: firstText([".sider-company a[ka='job-detail-company_stage']"]) || classified.companyStage,
+      companyScale: firstText([".sider-company a[ka='job-detail-company_scale']"]) || classified.companyScale
+    };
+  }
+
+  function siderCompanyFactTexts() {
+    return [".sider-company a", ".sider-company p", ".sider-company li", ".sider-company span", ".sider-company"]
+      .flatMap((selector) => Array.from(document.querySelectorAll(selector)).map((node) => textOf(node)));
+  }
+
+  const COMPANY_STAGE_PATTERN = /未融资|不需要融资|天使轮|[A-G]轮(?:及以上)?|IPO|已上市|战略投资|并购/;
+  const COMPANY_SCALE_PATTERN = /\d+(?:\s*[-~到]\s*\d+)?\s*人(?:以上|以下)?/;
+
+  function classifyZhipinCompanyFacts(values, companyName) {
+    const facts = { companyIndustry: "", companyStage: "", companyScale: "" };
+    for (const value of values) applyCompanyFactText(facts, cleanText(value), companyName);
+    return facts;
+  }
+
+  function applyCompanyFactText(facts, text, companyName) {
+    if (!text) return;
+    if (text.length <= 20 && /查看全部职位|公司基本信息|工商信息|公司介绍/.test(text)) return;
+
+    if (!facts.companyStage) {
+      const stage = text.match(COMPANY_STAGE_PATTERN);
+      if (stage) facts.companyStage = stage[0];
+    }
+    if (!facts.companyScale) {
+      const scale = text.match(COMPANY_SCALE_PATTERN);
+      if (scale) facts.companyScale = scale[0];
+    }
+    if (facts.companyIndustry) return;
+
+    const leftover = cleanText(
+      text
+        .replace(COMPANY_STAGE_PATTERN, " ")
+        .replace(COMPANY_SCALE_PATTERN, " ")
+        .split(companyName).join(" ")
+        .replace(/查看全部职位|公司基本信息|工商信息|公司介绍/g, " ")
+        .replace(/[·|｜]/g, " ")
+    );
+    if (
+      leftover
+      && leftover !== companyName
+      && leftover.length <= 30
+      && !COMPANY_STAGE_PATTERN.test(leftover)
+      && !COMPANY_SCALE_PATTERN.test(leftover)
+    ) {
+      facts.companyIndustry = leftover;
+    }
   }
 
   function cleanCompanyName(value) {
